@@ -5,6 +5,7 @@ import akka.actor.CoordinatedShutdown
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import hermesIntentHandler.Config
 import org.eclipse.paho.client.mqttv3
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -23,10 +24,9 @@ object MqttClientBehavior {
   final case class Disconnect(replyTo: ActorRef[Done]) extends MqttClientMessage
 
   def apply(replyTo: ActorRef[MqttMessage], topic: String): Behavior[MqttClientMessage] = Behaviors.setup { context =>
-    val mqttBroker = sys.env.getOrElse("HERMES_INTENT_HANDLER_MQTT_BROKER", "tcp://localhost:1883")
     val clientId = mqttv3.MqttClient.generateClientId()
-    context.log.info(s"connecting to MQTT broker at $mqttBroker as $clientId subscribed to $topic")
-    val mqttClient = new mqttv3.MqttClient(mqttBroker, clientId, new MemoryPersistence)
+    context.log.info(s"connecting to MQTT broker at ${Config.mqtt.broker} as $clientId subscribed to $topic")
+    val mqttClient = new mqttv3.MqttClient(Config.mqtt.broker, clientId, new MemoryPersistence)
     mqttClient.connect()
     val messageListener = new IMqttMessageListener {
       override def messageArrived(topic: String, message: mqttv3.MqttMessage): Unit =
