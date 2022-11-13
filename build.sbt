@@ -21,6 +21,6 @@ lazy val root = (project in file("."))
 (Compile / compile) := ((Compile / compile) dependsOn scalafmtCheckAll).value
 
 enablePlugins(JavaAppPackaging)
-dockerBaseImage := "eclipse-temurin:17-alpine"
+dockerBaseImage := "eclipse-temurin:17"
 dockerRepository := Some("ghcr.io/go4ble")
 dockerUpdateLatest := true
