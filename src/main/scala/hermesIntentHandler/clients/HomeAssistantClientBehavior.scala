@@ -6,6 +6,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
+import hermesIntentHandler.Config
 import play.api.libs.json._
 
 import java.time.OffsetDateTime
@@ -13,8 +14,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object HomeAssistantClientBehavior {
-  private val host = sys.env.getOrElse("HERMES_INTENT_HANDLER_HOME_ASSISTANT_HOST", "http://localhost:8123")
-  private val token = sys.env.getOrElse("HERMES_INTENT_HANDLER_HOME_ASSISTANT_TOKEN", "")
   private val defaultJsonConfiguration = JsonConfiguration(naming = JsonNaming.SnakeCase)
 
   sealed trait HomeAssistantClientMessage
@@ -44,16 +43,16 @@ object HomeAssistantClientBehavior {
     Behaviors.receiveMessage {
       case GetStateRequest(entityId, replyTo) =>
         val request = HttpRequest(
-          uri = s"$host/api/states/$entityId",
-          headers = Seq(headers.Authorization(headers.OAuth2BearerToken(token)))
+          uri = s"${Config.hass.host}/api/states/$entityId",
+          headers = Seq(headers.Authorization(headers.OAuth2BearerToken(Config.hass.token)))
         )
         context.pipeToSelf(Http().singleRequest(request).asJson[StateResponse])(StateResponseInternal(_, replyTo))
         Behaviors.same
 
       case CallServiceRequest(domain, service, entityId, replyTo, serviceData) =>
         val request = HttpRequest(
-          uri = s"$host/api/services/$domain/$service",
-          headers = Seq(headers.Authorization(headers.OAuth2BearerToken(token))),
+          uri = s"${Config.hass.host}/api/services/$domain/$service",
+          headers = Seq(headers.Authorization(headers.OAuth2BearerToken(Config.hass.token))),
           method = HttpMethods.POST,
           entity = HttpEntity(ContentTypes.`application/json`, Json.toJson(CallServiceRequestBody(entityId, serviceData)).toString())
         )

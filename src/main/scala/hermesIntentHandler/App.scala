@@ -1,7 +1,7 @@
 package hermesIntentHandler
 
-import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, Behavior}
 import hermesIntentHandler.clients.{HomeAssistantClientBehavior, MqttClientBehavior}
 import play.api.libs.json.Json
 
@@ -30,7 +30,9 @@ object App extends scala.App {
           if (mqttMessage.topic startsWith "hermes/intent/")
             Try(Json.parse(mqttMessage.payload).as[HermesIntent]) match {
               case Success(hermesIntent) =>
-                context.self ! HermesIntentReceived(hermesIntent)
+                if (Config.siteIds.isEmpty || Config.siteIds.contains(hermesIntent.siteId)) {
+                  context.self ! HermesIntentReceived(hermesIntent)
+                }
               case Failure(exception) =>
                 context.log.error(s"failed to parse intent: ${mqttMessage.topic}", exception)
             }
