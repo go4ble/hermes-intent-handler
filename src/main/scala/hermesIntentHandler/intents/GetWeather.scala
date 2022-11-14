@@ -2,10 +2,9 @@ package hermesIntentHandler.intents
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import hermesIntentHandler.HermesIntent
 import hermesIntentHandler.clients.HomeAssistantClientBehavior
-import hermesIntentHandler.clients.MqttClientBehavior.{MqttClientMessage, Publish}
-import play.api.libs.json.Json
+import hermesIntentHandler.clients.MqttClientBehavior.MqttClientMessage
+import hermesIntentHandler.hermes.{DialogueManager, HermesIntent}
 
 object GetWeather {
   val IntentName = "GetWeather"
@@ -14,7 +13,7 @@ object GetWeather {
   sealed trait GetWeatherMessage
   private final case class GetWeatherStateResponse(response: HomeAssistantClientBehavior.StateResponse) extends GetWeatherMessage
 
-  def apply(intent: HermesIntent, mqttClient: ActorRef[MqttClientMessage]): Behavior[GetWeatherMessage] = Behaviors.setup { context =>
+  def apply()(implicit intent: HermesIntent, mqttClient: ActorRef[MqttClientMessage]): Behavior[GetWeatherMessage] = Behaviors.setup { context =>
     require(intent.intentName == IntentName)
 
     val homeAssistantClient = context.spawnAnonymous(HomeAssistantClientBehavior())
@@ -27,11 +26,7 @@ object GetWeather {
       val detailedDescription = (forecast \ "detailed_description").as[String]
       // TODO time of day replacement (e.g. "1pm")
       val descriptionWithReplacements = detailedDescription.replaceAll("mph", "miles per hour")
-      val weatherStatement = Json.obj(
-        "sessionId" -> intent.sessionId,
-        "text" -> s"The weather $when is $descriptionWithReplacements"
-      )
-      mqttClient ! Publish("hermes/dialogueManager/endSession", weatherStatement.toString().getBytes, qos = 2)
+      DialogueManager.endSession(s"The weather $when is $descriptionWithReplacements")
 
       Behaviors.stopped
     }

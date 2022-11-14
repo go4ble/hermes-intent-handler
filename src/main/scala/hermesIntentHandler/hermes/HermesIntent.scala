@@ -1,6 +1,6 @@
-package hermesIntentHandler
+package hermesIntentHandler.hermes
 
-import hermesIntentHandler.HermesIntent._
+import hermesIntentHandler.hermes.HermesIntent._
 import play.api.libs.json.{JsObject, Json, Reads}
 
 case class HermesIntent(

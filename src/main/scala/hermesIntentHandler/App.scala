@@ -1,8 +1,9 @@
 package hermesIntentHandler
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, Behavior}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import hermesIntentHandler.clients.{HomeAssistantClientBehavior, MqttClientBehavior}
+import hermesIntentHandler.hermes.HermesIntent
 import play.api.libs.json.Json
 
 import scala.concurrent.Await
@@ -17,9 +18,11 @@ object App extends scala.App {
 
   val actorSystem = ActorSystem(
     Behaviors.setup[AppMessage] { context =>
-      val mqttClient = context.spawn(MqttClientBehavior(context.messageAdapter(MqttMessageReceived), "#"), "intents-mqtt-client")
+      implicit val mqttClient: ActorRef[MqttClientBehavior.MqttClientMessage] =
+        context.spawn(MqttClientBehavior(context.messageAdapter(MqttMessageReceived), "#"), "intents-mqtt-client")
       context.watch(mqttClient)
-      val homeAssistantClient = context.spawn(HomeAssistantClientBehavior(), "home-assistant-client")
+      implicit val homeAssistantClient: ActorRef[HomeAssistantClientBehavior.HomeAssistantClientMessage] =
+        context.spawn(HomeAssistantClientBehavior(), "home-assistant-client")
       context.watch(homeAssistantClient)
 
       Behaviors.receiveMessage {
@@ -39,11 +42,12 @@ object App extends scala.App {
           Behaviors.same
 
         case HermesIntentReceived(intent) =>
+          implicit val i: HermesIntent = intent
           val behavior: Behavior[_] = intent.intentName match {
-            case intents.GetTime.IntentName          => intents.GetTime(intent, mqttClient)
-            case intents.GetWeather.IntentName       => intents.GetWeather(intent, mqttClient)
-            case intents.GetTemperature.IntentName   => intents.GetTemperature(intent, mqttClient)
-            case intents.ChangeLightState.IntentName => intents.ChangeLightState(intent, mqttClient)
+            case intents.GetTime.IntentName          => intents.GetTime()
+            case intents.GetWeather.IntentName       => intents.GetWeather()
+            case intents.GetTemperature.IntentName   => intents.GetTemperature()
+            case intents.ChangeLightState.IntentName => intents.ChangeLightState()
             case _ =>
               context.log.error(s"unknown intent: $intent")
               Behaviors.empty
