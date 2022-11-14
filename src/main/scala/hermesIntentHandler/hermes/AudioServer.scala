@@ -15,7 +15,7 @@ object AudioServer {
 
   sealed trait AudioFile {
     protected val resource: String
-    protected[AudioServer] val resourceBytes: Array[Byte] = IOUtils.resourceToByteArray(resource)
+    protected[AudioServer] lazy val resourceBytes: Array[Byte] = IOUtils.resourceToByteArray(resource)
   }
   final object ConfirmationAudio extends AudioFile {
     // TODO occasionally chose random audio to play (https://www.myinstants.com/en/favorites/)

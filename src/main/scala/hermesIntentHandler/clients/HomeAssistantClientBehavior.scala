@@ -34,7 +34,9 @@ object HomeAssistantClientBehavior {
   implicit val stateResponseReads: Reads[StateResponse] = Json.configured(defaultJsonConfiguration).reads
 
   private final case class CallServiceRequestBody(entityId: String, serviceData: Option[JsObject])
-  private implicit val callServiceRequestBodyWrites: Writes[CallServiceRequestBody] = Json.configured(defaultJsonConfiguration).writes
+  private implicit val callServiceRequestBodyWrites: Writes[CallServiceRequestBody] = { case CallServiceRequestBody(entityId, serviceData) =>
+    serviceData.getOrElse(JsObject.empty) + ("entity_id" -> JsString(entityId))
+  }
 
   def apply(): Behavior[HomeAssistantClientMessage] = Behaviors.setup { context =>
     implicit val system: ActorSystem[_] = context.system
