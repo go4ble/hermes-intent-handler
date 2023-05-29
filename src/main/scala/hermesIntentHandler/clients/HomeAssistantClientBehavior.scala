@@ -14,6 +14,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object HomeAssistantClientBehavior {
+  type Actor = ActorRef[HomeAssistantClientMessage]
+
   private val defaultJsonConfiguration = JsonConfiguration(naming = JsonNaming.SnakeCase)
 
   sealed trait HomeAssistantClientMessage
@@ -27,8 +29,9 @@ object HomeAssistantClientBehavior {
       serviceData: Option[JsObject] = None
   ) extends HomeAssistantClientMessage
 
-  final case class StateResponseInternal(getStateResponse: Try[StateResponse], replyTo: ActorRef[StateResponse]) extends HomeAssistantClientMessage
-  final case class StateResponsesInternal(stateResponses: Try[Seq[StateResponse]], replyTo: ActorRef[Seq[StateResponse]]) extends HomeAssistantClientMessage
+  private final case class StateResponseInternal(getStateResponse: Try[StateResponse], replyTo: ActorRef[StateResponse]) extends HomeAssistantClientMessage
+  private final case class StateResponsesInternal(stateResponses: Try[Seq[StateResponse]], replyTo: ActorRef[Seq[StateResponse]])
+      extends HomeAssistantClientMessage
 
   final case class StateResponse(entityId: String, state: String, lastChanged: OffsetDateTime, lastUpdated: OffsetDateTime, attributes: JsObject)
   implicit val stateResponseReads: Reads[StateResponse] = Json.configured(defaultJsonConfiguration).reads

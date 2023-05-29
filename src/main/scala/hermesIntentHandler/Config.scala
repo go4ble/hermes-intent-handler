@@ -23,4 +23,9 @@ object Config {
   object mqtt {
     lazy val broker: String = underlying.getString("mqtt.broker")
   }
+
+  object tts {
+    lazy val host: String = underlying.getString("tts.host")
+    lazy val speakerId: String = underlying.getString("tts.speaker-id")
+  }
 }
