@@ -28,10 +28,7 @@ object GetTemperatureBehavior {
 
       case GetWeatherStateResponse(sessionId, response) =>
         val temperature = (response.attributes \ "temperature").as[Int]
-        mqttClient ! MqttClientBehavior.Publish(
-          dialogueManager.EndSessionTopic,
-          dialogueManager.EndSessionPayload(sessionId, Some(s"The temperature is currently $temperature degrees."))
-        )
+        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(sessionId, Some(s"The temperature is currently $temperature degrees.")))
         Behaviors.same
     }
   }

@@ -42,15 +42,9 @@ object ChangeLightStateBehavior {
           )
           Behaviors.same
 
-        case ChangeLightStateResponse(sessionId, siteId, response) =>
-          mqttClient ! MqttClientBehavior.Publish(
-            audioServer.playBytesTopic(siteId),
-            audioServer.AudioFile.Confirmation.getBytes
-          )
-          mqttClient ! MqttClientBehavior.Publish(
-            dialogueManager.EndSessionTopic,
-            dialogueManager.EndSessionPayload(sessionId)
-          )
+        case ChangeLightStateResponse(sessionId, siteId, _) =>
+          mqttClient ! MqttClientBehavior.Publish(audioServer.PlayBytesPayload(siteId, audioServer.AudioFile.Confirmation))
+          mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(sessionId))
           Behaviors.same
       }
     }

@@ -16,10 +16,7 @@ object UnhandledIntentBehavior {
         val intentNameHuman = intent.intentName.replaceAll("([A-Z])", " $1").trim
         val response = s"Sorry. Nothing is configured to handle the $intentNameHuman intent."
         context.log.warn(s"Unhandled intent: ${intent.intentName}")
-        mqttClient ! MqttClientBehavior.Publish(
-          dialogueManager.EndSessionTopic,
-          dialogueManager.EndSessionPayload(intent.sessionId, Some(response))
-        )
+        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(intent.sessionId, Some(response)))
         Behaviors.same
       case _ =>
         Behaviors.same

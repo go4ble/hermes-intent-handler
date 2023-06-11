@@ -6,17 +6,18 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import hermesIntentHandler.clients.MqttClientBehavior
-import hermesIntentHandler.hermes.TtsSayPayload
+import hermesIntentHandler.hermes.tts.SayPayload
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
-import java.util.UUID
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object TtsProxyBehavior {
   sealed trait Message
-  private final case class TtsSay(ttsSayPayload: TtsSayPayload) extends Message
-  private final case class TtsResponse(siteId: String, audio: Try[Array[Byte]]) extends Message
+  private final case class TtsSay(ttsSayPayload: SayPayload) extends Message
+  private final case class TtsResponse(ttsSayPayload: SayPayload, audio: Try[Array[Byte]]) extends Message
 
   private val TtsSayTopic = "hermes/tts/say".r
 
@@ -25,27 +26,26 @@ object TtsProxyBehavior {
     implicit val ec: ExecutionContext = context.executionContext
 
     val payloadAdapter = context.messageAdapter[(String, MqttMessage)] { case (_, mqttMessage) =>
-      TtsSay(TtsSayPayload.fromPayload(mqttMessage.getPayload))
+      TtsSay(SayPayload.fromPayload(mqttMessage.getPayload))
     }
 
     mqttClient ! MqttClientBehavior.Subscribe(TtsSayTopic, payloadAdapter)
 
     Behaviors.receiveMessage {
       case TtsSay(message) =>
-        val request = HttpRequest(uri = s"${Config.tts.host}/api/tts?speaker_id=${Config.tts.speakerId}&text=${message.text}")
-        context.pipeToSelf(httpGetBytes(request))(TtsResponse(message.siteId, _))
+        val text = URLEncoder.encode(message.text, StandardCharsets.UTF_8)
+        val request = HttpRequest(uri = s"${Config.tts.host}/api/tts?speaker_id=${Config.tts.speakerId}&text=$text")
+        context.pipeToSelf(httpGetBytes(request))(TtsResponse(message, _))
         Behaviors.same
-      case TtsResponse(siteId, Success(audio)) =>
-        mqttClient ! MqttClientBehavior.Publish(hermesAudioServerPlayBytesTopic(siteId), audio)
+      case TtsResponse(sayPayload, Success(audio)) =>
+        mqttClient ! MqttClientBehavior.Publish(hermes.audioServer.PlayBytesPayload(sayPayload.siteId, audio))
+        mqttClient ! MqttClientBehavior.Publish(hermes.tts.SayFinishedPayload(sayPayload))
         Behaviors.same
       case TtsResponse(_, Failure(exception)) =>
         context.log.error("failed to retrieve TTS audio", exception)
         Behaviors.same
     }
   }
-
-  private def hermesAudioServerPlayBytesTopic(siteId: String, requestId: String = UUID.randomUUID().toString) =
-    s"hermes/audioServer/$siteId/playBytes/$requestId"
 
   private def httpGetBytes(request: HttpRequest)(implicit system: ActorSystem[_], ec: ExecutionContext): Future[Array[Byte]] = for {
     httpResponse <- Http().singleRequest(request)

@@ -2,10 +2,9 @@ package hermesIntentHandler.clients
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import hermesIntentHandler.Config
+import hermesIntentHandler.{Config, MqttPayload}
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.eclipse.paho.client.mqttv3.{MqttClient, MqttMessage}
-import play.api.libs.json.{Json, Writes}
 
 import scala.util.matching.Regex
 
@@ -17,11 +16,7 @@ object MqttClientBehavior {
   final case class Subscribe(topic: Regex, replyTo: ActorRef[(String, MqttMessage)]) extends Message
   final case class SubscribeToUnhandled(replyTo: ActorRef[(String, MqttMessage)]) extends Message
   final case class Unsubscribe(replyTo: ActorRef[(String, MqttMessage)]) extends Message
-  final case class Publish(topic: String, payload: Array[Byte]) extends Message
-  object Publish {
-    def apply[T](topic: String, payload: T)(implicit writes: Writes[T]): Publish =
-      Publish(topic, Json.toBytes(Json.toJson(payload)))
-  }
+  final case class Publish(mqttPayload: MqttPayload) extends Message
   private final case class MessageReceived(topic: String, message: MqttMessage) extends Message
 
   def apply(): Behavior[Message] = Behaviors.setup { context =>
@@ -46,8 +41,8 @@ object MqttClientBehavior {
         case Unsubscribe(replyTo) =>
           context.log.debug(s"Unsubscribe: $replyTo")
           apply(client, subscriptions - replyTo)
-        case Publish(topic: String, payload: Array[Byte]) =>
-          client.publish(topic, payload, 2, false)
+        case Publish(mqttPayload) =>
+          client.publish(mqttPayload.topic, mqttPayload.payload, mqttPayload.qos, mqttPayload.retained)
           Behaviors.same
         case MessageReceived(topic, message) =>
           context.log.debug(s"MessageReceived: $topic, ${new String(message.getPayload.take(500))}")

@@ -27,10 +27,7 @@ object GetTimeBehavior {
       }
       val getTimeResponse = s"The time is $hour $minute."
 
-      mqttClient ! MqttClientBehavior.Publish(
-        dialogueManager.EndSessionTopic,
-        dialogueManager.EndSessionPayload(intent.sessionId, Some(getTimeResponse))
-      )
+      mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(intent.sessionId, Some(getTimeResponse)))
 
       Behaviors.same
     }

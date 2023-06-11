@@ -32,10 +32,7 @@ object GetWeatherBehavior {
         val detailedDescription = (forecast \ "detailed_description").as[String]
         // TODO time of day replacement (e.g. "1pm")
         val descriptionWithReplacements = detailedDescription.replaceAll("mph", "miles per hour")
-        mqttClient ! MqttClientBehavior.Publish(
-          dialogueManager.EndSessionTopic,
-          dialogueManager.EndSessionPayload(sessionId, Some(s"The weather $when is $descriptionWithReplacements"))
-        )
+        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(sessionId, Some(s"The weather $when is $descriptionWithReplacements")))
         Behaviors.same
     }
   }
