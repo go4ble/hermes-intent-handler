@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -38,7 +39,8 @@ object TtsProxyBehavior {
         context.pipeToSelf(httpGetBytes(request))(TtsResponse(message, _))
         Behaviors.same
       case TtsResponse(sayPayload, Success(audio)) =>
-        mqttClient ! MqttClientBehavior.Publish(hermes.audioServer.PlayBytesPayload(sayPayload.siteId, audio))
+        val sayId = sayPayload.id.getOrElse(UUID.randomUUID().toString)
+        mqttClient ! MqttClientBehavior.Publish(hermes.audioServer.PlayBytesPayload(sayPayload.siteId, audio, sayId))
         mqttClient ! MqttClientBehavior.Publish(hermes.tts.SayFinishedPayload(sayPayload))
         Behaviors.same
       case TtsResponse(_, Failure(exception)) =>
