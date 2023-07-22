@@ -5,7 +5,9 @@ import akka.actor.typed.{ActorRef, Behavior}
 import hermesIntentHandler.{Config, MqttPayload}
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.eclipse.paho.client.mqttv3.{MqttClient, MqttMessage}
+import play.api.libs.json.Json
 
+import scala.util.Try
 import scala.util.matching.Regex
 
 object MqttClientBehavior {
@@ -45,7 +47,8 @@ object MqttClientBehavior {
           client.publish(mqttPayload.topic, mqttPayload.payload, mqttPayload.qos, mqttPayload.retained)
           Behaviors.same
         case MessageReceived(topic, message) =>
-          context.log.debug(s"MessageReceived: $topic, ${new String(message.getPayload.take(500))}")
+          val payloadText = Try(Json.parse(message.getPayload)).map(_.toString()).getOrElse(s"[${message.getPayload.length} bytes]")
+          context.log.debug(s"MessageReceived: $topic, ${payloadText.take(500)}")
           val matchedSubscribers = subscriptions.collect { case (replyTo, Right(pattern)) if pattern.matches(topic) => replyTo }
           val sendTo = if (matchedSubscribers.isEmpty) unhandledMessageSubscriptions else matchedSubscribers
           sendTo.foreach(_ ! (topic, message))

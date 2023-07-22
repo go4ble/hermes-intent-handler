@@ -3,9 +3,9 @@ package hermesIntentHandler.intents
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import hermesIntentHandler.clients.{HomeAssistantClientBehavior, MqttClientBehavior}
-import hermesIntentHandler.hermes.IntentPayload
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import hermesIntentHandler.hermes.dialogueManager
+import hermesIntentHandler.hermes.nlu.Intent
 
 object GetTemperatureBehavior {
   private val GetTemperatureIntentTopic = "hermes/intent/GetTemperature".r
@@ -14,7 +14,7 @@ object GetTemperatureBehavior {
   sealed trait GetTemperatureMessage
   private final case class HandleIntent(sessionId: String) extends GetTemperatureMessage
   private object HandleIntent {
-    def apply(mqttMessage: MqttMessage): HandleIntent = HandleIntent(IntentPayload.fromPayload(mqttMessage.getPayload).sessionId)
+    def apply(mqttMessage: MqttMessage): HandleIntent = HandleIntent(Intent.fromPayload(mqttMessage.getPayload).sessionId)
   }
   private final case class GetWeatherStateResponse(sessionId: String, response: HomeAssistantClientBehavior.StateResponse) extends GetTemperatureMessage
 
@@ -28,7 +28,7 @@ object GetTemperatureBehavior {
 
       case GetWeatherStateResponse(sessionId, response) =>
         val temperature = (response.attributes \ "temperature").as[Int]
-        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(sessionId, Some(s"The temperature is currently $temperature degrees.")))
+        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSession(sessionId, Some(s"The temperature is currently $temperature degrees.")))
         Behaviors.same
     }
   }

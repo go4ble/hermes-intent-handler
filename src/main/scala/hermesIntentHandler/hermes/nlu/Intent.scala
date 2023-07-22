@@ -1,9 +1,9 @@
-package hermesIntentHandler.hermes
+package hermesIntentHandler.hermes.nlu
 
-import hermesIntentHandler.hermes.IntentPayload._
+import hermesIntentHandler.hermes.nlu.Intent._
 import play.api.libs.json._
 
-case class IntentPayload(
+case class Intent(
     input: String,
     intent: HermesIntentRecognition,
     siteId: String,
@@ -19,7 +19,7 @@ case class IntentPayload(
     slots.find(_.slotName == slotName).map(_.value.value.as[T])
 }
 
-object IntentPayload {
+object Intent {
   case class HermesIntentRecognition(intentName: String, confidenceScore: BigDecimal)
 
   case class HermesIntentSlotValue(kind: String, value: JsValue)
@@ -32,7 +32,7 @@ object IntentPayload {
   implicit val hermesIntentSlotValueReads: Reads[HermesIntentSlotValue] = Json.reads
   implicit val hermesIntentSlotReads: Reads[HermesIntentSlot] = Json.reads
   implicit val hermesIntentRecognitionReads: Reads[HermesIntentRecognition] = Json.reads
-  implicit val hermesIntentReads: Reads[IntentPayload] = Json.reads
+  implicit val hermesIntentReads: Reads[Intent] = Json.reads
 
-  def fromPayload(payload: Array[Byte]): IntentPayload = Json.parse(payload).as[IntentPayload]
+  def fromPayload(payload: Array[Byte]): Intent = Json.parse(payload).as[Intent]
 }

@@ -6,7 +6,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import hermesIntentHandler.clients.MqttClientBehavior
-import hermesIntentHandler.hermes.tts.SayPayload
+import hermesIntentHandler.hermes.tts.Say
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 import java.net.URLEncoder
@@ -17,8 +17,8 @@ import scala.util.{Failure, Success, Try}
 
 object TtsProxyBehavior {
   sealed trait Message
-  private final case class TtsSay(ttsSayPayload: SayPayload) extends Message
-  private final case class TtsResponse(ttsSayPayload: SayPayload, audio: Try[Array[Byte]]) extends Message
+  private final case class TtsSay(ttsSayPayload: Say) extends Message
+  private final case class TtsResponse(ttsSayPayload: Say, audio: Try[Array[Byte]]) extends Message
 
   private val TtsSayTopic = "hermes/tts/say".r
 
@@ -27,7 +27,7 @@ object TtsProxyBehavior {
     implicit val ec: ExecutionContext = context.executionContext
 
     val payloadAdapter = context.messageAdapter[(String, MqttMessage)] { case (_, mqttMessage) =>
-      TtsSay(SayPayload.fromPayload(mqttMessage.getPayload))
+      TtsSay(Say.fromPayload(mqttMessage.getPayload))
     }
 
     mqttClient ! MqttClientBehavior.Subscribe(TtsSayTopic, payloadAdapter)
@@ -40,8 +40,8 @@ object TtsProxyBehavior {
         Behaviors.same
       case TtsResponse(sayPayload, Success(audio)) =>
         val sayId = sayPayload.id.getOrElse(UUID.randomUUID().toString)
-        mqttClient ! MqttClientBehavior.Publish(hermes.audioServer.PlayBytesPayload(sayPayload.siteId, audio, sayId))
-        mqttClient ! MqttClientBehavior.Publish(hermes.tts.SayFinishedPayload(sayPayload))
+        mqttClient ! MqttClientBehavior.Publish(hermes.audioServer.PlayBytes(sayPayload.siteId, audio, sayId))
+        mqttClient ! MqttClientBehavior.Publish(hermes.tts.SayFinished(sayPayload))
         Behaviors.same
       case TtsResponse(_, Failure(exception)) =>
         context.log.error("failed to retrieve TTS audio", exception)

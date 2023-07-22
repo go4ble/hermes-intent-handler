@@ -1,7 +1,7 @@
 package hermesIntentHandler.hermes.tts
 
 import hermesIntentHandler.MqttPayload
-import hermesIntentHandler.hermes.tts.SayFinishedPayload.sayFinishedPayloadWrites
+import hermesIntentHandler.hermes.tts.SayFinished.sayFinishedPayloadWrites
 import play.api.libs.json.{Json, OWrites}
 
 /** Indicates that the text to speech system has finished speaking
@@ -13,7 +13,7 @@ import play.api.libs.json.{Json, OWrites}
   * @param sessionId
   *   current session ID
   */
-case class SayFinishedPayload(
+case class SayFinished(
     id: Option[String],
     siteId: String,
     sessionId: Option[String]
@@ -22,9 +22,9 @@ case class SayFinishedPayload(
   override val payload: Array[Byte] = Json.toBytes(sayFinishedPayloadWrites.writes(this))
 }
 
-object SayFinishedPayload {
-  implicit val sayFinishedPayloadWrites: OWrites[SayFinishedPayload] = Json.writes
+object SayFinished {
+  implicit val sayFinishedPayloadWrites: OWrites[SayFinished] = Json.writes
 
-  def apply(sayPayload: SayPayload): SayFinishedPayload =
-    SayFinishedPayload(sayPayload.id, sayPayload.siteId, sayPayload.sessionId)
+  def apply(sayPayload: Say): SayFinished =
+    SayFinished(sayPayload.id, sayPayload.siteId, sayPayload.sessionId)
 }

@@ -3,7 +3,8 @@ package hermesIntentHandler.intents
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import hermesIntentHandler.clients.{HomeAssistantClientBehavior, MqttClientBehavior}
-import hermesIntentHandler.hermes.{IntentPayload, audioServer, dialogueManager}
+import hermesIntentHandler.hermes.nlu.Intent
+import hermesIntentHandler.hermes.{audioServer, dialogueManager}
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import play.api.libs.json.Json
 
@@ -15,9 +16,9 @@ object ChangeLightStateBehavior {
   private val SlotNameLightBrightnessPercentage = "light_brightness_percentage"
 
   sealed trait ChangeLightStateMessage
-  private final case class HandleIntent(intent: IntentPayload) extends ChangeLightStateMessage
+  private final case class HandleIntent(intent: Intent) extends ChangeLightStateMessage
   private object HandleIntent {
-    def apply(mqttMessage: MqttMessage): HandleIntent = HandleIntent(IntentPayload.fromPayload(mqttMessage.getPayload))
+    def apply(mqttMessage: MqttMessage): HandleIntent = HandleIntent(Intent.fromPayload(mqttMessage.getPayload))
   }
   private final case class ChangeLightStateResponse(sessionId: String, siteId: String, response: Seq[HomeAssistantClientBehavior.StateResponse])
       extends ChangeLightStateMessage
@@ -43,8 +44,8 @@ object ChangeLightStateBehavior {
           Behaviors.same
 
         case ChangeLightStateResponse(sessionId, siteId, _) =>
-          mqttClient ! MqttClientBehavior.Publish(audioServer.PlayBytesPayload(siteId, audioServer.AudioFile.Confirmation))
-          mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(sessionId))
+          mqttClient ! MqttClientBehavior.Publish(audioServer.PlayBytes(siteId, audioServer.AudioFile.Confirmation))
+          mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSession(sessionId))
           Behaviors.same
       }
     }

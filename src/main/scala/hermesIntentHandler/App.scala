@@ -18,11 +18,12 @@ object App extends scala.App {
       val hassClient = spawnAndWatch(HomeAssistantClientBehavior(), "hass-client")
       Seq(
         "tts-proxy" -> TtsProxyBehavior(mqttClient),
+        "intents.unhandled-intent" -> intents.UnhandledIntentBehavior(mqttClient),
         "intents.get-time" -> intents.GetTimeBehavior(mqttClient),
         "intents.get-temperature" -> intents.GetTemperatureBehavior(mqttClient, hassClient),
         "intents.get-weather" -> intents.GetWeatherBehavior(mqttClient, hassClient),
         "intents.change-light-state" -> intents.ChangeLightStateBehavior(mqttClient, hassClient),
-        "intents.unhandled-intent" -> intents.UnhandledIntentBehavior(mqttClient)
+        "intents.make-announcement" -> intents.MakeAnnouncementBehavior(mqttClient)
       ).foreach { case (name, behavior) => spawnAndWatch(behavior, name) }
 
       Behaviors.empty

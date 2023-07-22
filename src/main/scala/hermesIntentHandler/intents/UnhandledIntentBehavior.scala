@@ -3,7 +3,8 @@ package hermesIntentHandler.intents
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import hermesIntentHandler.clients.MqttClientBehavior
-import hermesIntentHandler.hermes.{IntentPayload, dialogueManager}
+import hermesIntentHandler.hermes.dialogueManager
+import hermesIntentHandler.hermes.nlu.Intent
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 object UnhandledIntentBehavior {
@@ -12,11 +13,11 @@ object UnhandledIntentBehavior {
 
     Behaviors.receiveMessage {
       case (topic, mqttMessage) if topic.startsWith("hermes/intent/") =>
-        val intent = IntentPayload.fromPayload(mqttMessage.getPayload)
+        val intent = Intent.fromPayload(mqttMessage.getPayload)
         val intentNameHuman = intent.intentName.replaceAll("([A-Z])", " $1").trim
         val response = s"Sorry. Nothing is configured to handle the $intentNameHuman intent."
         context.log.warn(s"Unhandled intent: ${intent.intentName}")
-        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(intent.sessionId, Some(response)))
+        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSession(intent.sessionId, Some(response)))
         Behaviors.same
       case _ =>
         Behaviors.same

@@ -19,7 +19,7 @@ import play.api.libs.json.{Json, Reads}
   * @param sessionId
   *   current session ID
   */
-case class SayPayload(
+case class Say(
     text: String,
     lang: Option[String],
     id: Option[String],
@@ -30,8 +30,8 @@ case class SayPayload(
   require(volume.forall(v => v >= 0 && v <= 1))
 }
 
-object SayPayload {
-  implicit val sayPayloadReads: Reads[SayPayload] = Json.reads
+object Say {
+  implicit val sayPayloadReads: Reads[Say] = Json.reads
 
-  def fromPayload(payload: Array[Byte]): SayPayload = Json.parse(payload).as[SayPayload]
+  def fromPayload(payload: Array[Byte]): Say = Json.parse(payload).as[Say]
 }

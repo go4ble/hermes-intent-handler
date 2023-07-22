@@ -3,7 +3,8 @@ package hermesIntentHandler.intents
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import hermesIntentHandler.clients.{HomeAssistantClientBehavior, MqttClientBehavior}
-import hermesIntentHandler.hermes.{IntentPayload, dialogueManager}
+import hermesIntentHandler.hermes.dialogueManager
+import hermesIntentHandler.hermes.nlu.Intent
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 object GetWeatherBehavior {
@@ -13,7 +14,7 @@ object GetWeatherBehavior {
   sealed trait GetWeatherMessage
   private final case class HandleIntent(sessionId: String) extends GetWeatherMessage
   private object HandleIntent {
-    def apply(mqttMessage: MqttMessage): HandleIntent = HandleIntent(IntentPayload.fromPayload(mqttMessage.getPayload).sessionId)
+    def apply(mqttMessage: MqttMessage): HandleIntent = HandleIntent(Intent.fromPayload(mqttMessage.getPayload).sessionId)
   }
   private final case class GetWeatherStateResponse(sessionId: String, response: HomeAssistantClientBehavior.StateResponse) extends GetWeatherMessage
 
@@ -32,7 +33,7 @@ object GetWeatherBehavior {
         val detailedDescription = (forecast \ "detailed_description").as[String]
         // TODO time of day replacement (e.g. "1pm")
         val descriptionWithReplacements = detailedDescription.replaceAll("mph", "miles per hour")
-        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(sessionId, Some(s"The weather $when is $descriptionWithReplacements")))
+        mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSession(sessionId, Some(s"The weather $when is $descriptionWithReplacements")))
         Behaviors.same
     }
   }

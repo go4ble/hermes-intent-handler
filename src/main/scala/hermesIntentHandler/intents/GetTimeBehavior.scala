@@ -4,7 +4,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import hermesIntentHandler.Config
 import hermesIntentHandler.clients.MqttClientBehavior
-import hermesIntentHandler.hermes.{IntentPayload, dialogueManager}
+import hermesIntentHandler.hermes.dialogueManager
+import hermesIntentHandler.hermes.nlu.Intent
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 import java.time.ZonedDateTime
@@ -12,8 +13,8 @@ import java.time.ZonedDateTime
 object GetTimeBehavior {
   private val GetTimeIntentTopic = "hermes/intent/GetTime".r
 
-  def apply(mqttClient: MqttClientBehavior.Actor): Behavior[IntentPayload] = Behaviors.setup { context =>
-    val payloadAdapter = context.messageAdapter[(String, MqttMessage)] { case (_, msg) => IntentPayload.fromPayload(msg.getPayload) }
+  def apply(mqttClient: MqttClientBehavior.Actor): Behavior[Intent] = Behaviors.setup { context =>
+    val payloadAdapter = context.messageAdapter[(String, MqttMessage)] { case (_, msg) => Intent.fromPayload(msg.getPayload) }
 
     mqttClient ! MqttClientBehavior.Subscribe(GetTimeIntentTopic, payloadAdapter)
 
@@ -27,7 +28,7 @@ object GetTimeBehavior {
       }
       val getTimeResponse = s"The time is $hour $minute."
 
-      mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSessionPayload(intent.sessionId, Some(getTimeResponse)))
+      mqttClient ! MqttClientBehavior.Publish(dialogueManager.EndSession(intent.sessionId, Some(getTimeResponse)))
 
       Behaviors.same
     }
